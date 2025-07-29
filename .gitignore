@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+media_sort_log.txt
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Environment files
+.env
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE configs
+.vscode/
+.idea/
+
+# Compiled GUI apps
+*.exe
+*.app
+*.spec
+dist/
+build/
