@@ -15,14 +15,12 @@ Includes:
 - Undo functionality
 - Simple GUI built with Tkinter
 
----
 
 ## 📦 Requirements
 
 - Python 3.8+
 - pip install -r requirements.txt
 
----
 
 ## 🚀 Usage
 
