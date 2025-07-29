@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
 import main
 import config
@@ -26,6 +26,9 @@ class MediaSorterGUI:
         self.dry_run_check.grid(row=1, column=1, sticky="w", padx=5, pady=5)
 
         # Buttons
+        self.preview_button = tk.Button(master, text="Preview Sort", command=self.preview_sort)
+        self.preview_button.grid(row=2, column=0, padx=5, pady=5)
+
         self.sort_button = tk.Button(master, text="Run Sort", command=self.run_sort)
         self.sort_button.grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
@@ -59,6 +62,37 @@ class MediaSorterGUI:
         self.log(f"[UNDO] Undoing last sort in {config.UNSORTED_FOLDER}")
         main.undo_last_sort()
         self.log("[DONE] Undo complete.")
+
+    def preview_sort(self):
+        config.UNSORTED_FOLDER = Path(self.folder_var.get())
+        config.DRY_RUN = self.dry_run_var.get()
+
+        preview_items = main.generate_preview()
+
+        preview_win = tk.Toplevel()
+        preview_win.title("Sort Preview")
+        preview_win.geometry("800x400")
+
+        tree = ttk.Treeview(preview_win, columns=("original", "clean_name", "category", "source"), show="headings")
+        tree.heading("original", text="Original Name")
+        tree.heading("clean_name", text="Clean Name")
+        tree.heading("category", text="Category")
+        tree.heading("source", text="Source")
+        tree.column("original", width=200)
+        tree.column("clean_name", width=250)
+        tree.column("category", width=100)
+        tree.column("source", width=150)
+
+        vsb = ttk.Scrollbar(preview_win, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=vsb.set)
+
+        for item in preview_items:
+            tree.insert("", "end", values=(item["original"], item["clean_name"], item["category"], item["source"]))
+
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        preview_win.grid_columnconfigure(0, weight=1)
+        preview_win.grid_rowconfigure(0, weight=1)
 
     def log(self, message):
         self.log_text.insert(tk.END, message + "\n")

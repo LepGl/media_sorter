@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from config import UNSORTED_FOLDER, CATEGORIES, VIDEO_EXTENSIONS, DRY_RUN
-from utils import guess_category_from_name, parse_name_year_fallback
+from utils import guess_category_from_name, guess_category_from_contents, parse_name_year_fallback
 from metadata import get_movie_or_series_metadata, get_book_metadata
 
 LOG_FILE = UNSORTED_FOLDER / "media_sort_log.txt"
@@ -47,24 +47,31 @@ def wrap_loose_video_file(file_path, category_guess="movies"):
 def get_final_name_and_category(folder):
     name_guess = folder.name
 
-    # Heuristic category guess first
-    guess_category = guess_category_from_name(name_guess)
+    # Step 1: Try guessing from name
+    category = guess_category_from_name(name_guess)
 
-    # Books and audiobooks: try Google Books first
-    if guess_category in ("books", "audiobooks"):
+    # Step 2: If still unknown, try guessing from file contents
+    if not category and folder.is_dir():
+        category = guess_category_from_contents(folder)
+
+    # Step 3: Fallback to 'movies'
+    if not category:
+        category = "movies"
+
+    # Step 4: Try metadata
+    if category in ("books", "audiobooks"):
         book_meta = get_book_metadata(name_guess)
         if book_meta:
-            return book_meta["name"], guess_category
+            return book_meta["name"], category
 
-    # Movies/series: try IMDb
     movie_meta = get_movie_or_series_metadata(name_guess)
     if movie_meta:
         return movie_meta["name"], movie_meta["category"]
 
-    # Fallback
+    # Step 5: Fallback renaming
     fallback_name = parse_name_year_fallback(name_guess)
-    print(f"[FALLBACK] {name_guess} → {fallback_name} ({guess_category})")
-    return fallback_name, guess_category or "movies"
+    print(f"[FALLBACK] {name_guess} → {fallback_name} ({category})")
+    return fallback_name, category
 
 def resolve_name_conflict(target_base, name):
     target_path = target_base / name
@@ -82,6 +89,52 @@ def log_action(original_path: Path, new_path: Path):
     with open(LOG_FILE, "a", newline='', encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow([datetime.now().isoformat(), str(original_path), str(new_path)])
+
+def generate_preview():
+    print(f"[PREVIEW SCAN] {UNSORTED_FOLDER}")
+    preview_items = []
+    folders, loose_files = scan_unsorted_folder(UNSORTED_FOLDER)
+
+    for file in loose_files:
+        guess = guess_category_from_name(file.name)
+        wrapped_folder, guess = wrap_loose_video_file(file, category_guess=guess or "movies")
+        folders.append(wrapped_folder)
+
+    for folder in folders:
+        name_guess = folder.name
+        category = guess_category_from_name(name_guess)
+        source = "guessed"
+
+        if not category and folder.is_dir():
+            category = guess_category_from_contents(folder)
+            source = "contents"
+
+        if not category:
+            category = "movies"
+            source = "fallback"
+
+        clean_name = parse_name_year_fallback(name_guess)
+
+        if category in ("books", "audiobooks"):
+            book_meta = get_book_metadata(name_guess)
+            if book_meta:
+                clean_name = book_meta["name"]
+                source = "Google Books"
+        else:
+            movie_meta = get_movie_or_series_metadata(name_guess)
+            if movie_meta:
+                clean_name = movie_meta["name"]
+                source = f"IMDb ({movie_meta['category']})"
+                category = movie_meta["category"]
+
+        preview_items.append({
+            "original": name_guess,
+            "clean_name": clean_name,
+            "category": category,
+            "source": source
+        })
+
+    return preview_items
 
 def undo_last_sort():
     if not LOG_FILE.exists():

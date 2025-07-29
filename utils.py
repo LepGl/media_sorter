@@ -1,35 +1,53 @@
 import re
+from pathlib import Path
+from config import VIDEO_EXTENSIONS
 
-def guess_category_from_name(name):
-    name_lower = name.lower()
+def guess_category_from_name(name: str):
+    lowered = name.lower()
 
-    if any(x in name_lower for x in ["s0", "season", "ep", "complete", "episode"]):
-        return "series"
-    elif any(x in name_lower for x in ["audiobook", "audio book", "audible"]):
-        return "audiobooks"
-    elif any(x in name_lower for x in ["book", ".epub", ".pdf", "volume", "edition"]):
+    # Keywords in folder name
+    if any(keyword in lowered for keyword in ["epub", "pdf", "book", "edition"]):
         return "books"
-    elif any(x in name_lower for x in ["course", "tutorial", "udemy", "guide"]):
-        return "courses"
-    elif any(x in name_lower for x in ["setup", "installer", "crack", "license", "pro", "win64"]):
-        return "software"
-    elif any(x in name_lower for x in ["game", "fitgirl", "codex", "gog", "repack"]):
+    if any(keyword in lowered for keyword in ["audiobook", "m4b", "audible", "narrated"]):
+        return "audiobooks"
+    if any(keyword in lowered for keyword in ["fitgirl", "gog", "codex", "repack"]):
         return "videogames"
-    elif re.search(r"\b\d{4}\b", name_lower):
+    if any(keyword in lowered for keyword in ["s0", "e0", "season", "episode"]):
+        return "series"
+    if any(keyword in lowered for keyword in ["course", "tutorial", "lesson"]):
+        return "courses"
+    if any(keyword in lowered for keyword in ["pro", "setup", "x64", "software", "installer"]):
+        return "software"
+    if any(keyword in lowered for keyword in ["bluray", "webdl", "hdrip", "x265", "x264", "1080p", "720p"]):
         return "movies"
+
+    return None  # fallback if name doesn't suggest anything
+
+def guess_category_from_contents(folder: Path):
+    if not folder.is_dir():
+        return None
+
+    extensions = set()
+    for file in folder.rglob("*"):
+        if file.is_file():
+            extensions.add(file.suffix.lower())
+
+    # Extension-based logic
+    if any(ext in extensions for ext in [".epub", ".pdf"]):
+        return "books"
+    if any(ext in extensions for ext in [".m4b", ".mp3", ".flac"]):
+        return "audiobooks"
+    if any(ext in extensions for ext in VIDEO_EXTENSIONS):
+        return "movies"
+    if any(ext in extensions for ext in [".exe", ".dmg", ".msi", ".pkg"]):
+        return "software"
 
     return None
 
-def parse_name_year_fallback(name):
-    # Remove brackets and extra tags
-    cleaned = re.sub(r"[\[\(].*?[\]\)]", "", name)
-    cleaned = re.sub(r"[\._\-]+", " ", cleaned).strip()
-
-    # Extract year
-    match = re.search(r"(.*?)(\b19\d{2}|\b20\d{2})", cleaned)
-    if match:
-        title = match.group(1).strip()
-        year = match.group(2)
-        return f"{title} ({year})"
-    else:
-        return cleaned
+def parse_name_year_fallback(name: str):
+    name = Path(name).stem
+    name = re.sub(r"[\\[\\]{}()_]", "", name)
+    name = re.sub(r"[.\\-]", " ", name)
+    name = re.sub(r"\\s+", " ", name)
+    name = name.strip()
+    return name
