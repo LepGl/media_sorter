@@ -16,13 +16,13 @@ Includes:
 - Simple GUI built with Tkinter
 
 
-## 📦 Requirements
+## Requirements
 
 - Python 3.8+
 - pip install -r requirements.txt
 
 
-## 🚀 Usage
+## Usage
 
 ### CLI Mode
 
@@ -30,7 +30,7 @@ Includes:
 python main.py
 ```
 
-### GUI MODE
+### GUI Mode
 
 ```bash
 python main.py
@@ -41,7 +41,7 @@ Use the GUI to:
 - Sort your content
 - Undo the last sort if needed
 
-## FEATURES
+## Features
 - Rename folders like Some.Movie.2012.1080p → Some Movie (2012)
 - Automatically categorize files into:
     - movies/
