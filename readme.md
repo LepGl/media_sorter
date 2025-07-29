@@ -33,7 +33,7 @@ python main.py
 ### GUI Mode
 
 ```bash
-python main.py
+python gui.py
 ```
 Use the GUI to:
 - Select the folder to organize
